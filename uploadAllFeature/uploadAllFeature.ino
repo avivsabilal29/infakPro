@@ -48,11 +48,21 @@ uint32_t timeStamp = 0;
 
 // Include after TinyGSM definitions
 #include <TinyGsmClient.h>
+#include <SPI.h>
+#include <MFRC522.h>
+#define r1 14
+int relay1 = LOW;
+#define SDA_PIN 21
+#define RST_PIN 15
+MFRC522 mfrc522(SDA_PIN, RST_PIN);   // Create MFRC522 instance.
+
+
 const char apn[] = "M2MAUTOTRONIC";
 const char server[] = "infakpro.com"; // domain name: example.com, maker.ifttt.com, etc
 const char resource[] = "/post-data.php";         // resource path, for example: /post-data.php
 const int  port = 80;
 String apiKeyValue = "InfakProFaisal23";
+String auth = "";
 
 // Layers stack
 TinyGsm sim_modem(SerialAT);
@@ -145,9 +155,14 @@ void modemRestart() {
 void setup() {
   // Set LED OFF
   pinMode(LED_PIN, OUTPUT);
+  pinMode(r1, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
-
   SerialMon.begin(115200);
+  SPI.begin();      // Initiate  SPI bus
+  mfrc522.PCD_Init();   // Initiate MFRC522
+  Serial.println("Approximate your card to the reader...");
+  SerialBT.print("Approximate your card to the reader...");
+  Serial.println();
   delay(100);
 
   // Set SIM module baud rate and UART pins
@@ -316,16 +331,6 @@ void setup() {
 }
 
 void loop() {
-  // while (confirmRequestPending) {
-  //   if (Serial.available()) {
-  //     int dat = Serial.read();
-  //     if (dat == 'Y' || dat == 'y') {
-  //       SerialBT.confirmReply(true);
-  //     } else {
-  //       SerialBT.confirmReply(false);
-  //     }
-  //   }
-  // }
 
   //BAT ADC
   if (millis() - timeStamp > 1000) {
@@ -360,6 +365,57 @@ void loop() {
   int min2 = 0;
   int sec2 = 0;
   int signal2 = ubahmaxmin(sim_modem.getSignalQuality(), 2, 31, 1, 5);
+
+
+  // Code for RFID
+
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent())
+  {
+    return;
+  }
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+  //Show UID on serial monitor
+  Serial.print("UID tag :");
+  SerialBT.print("UID Tag : ");
+  String content = "";
+  byte letter;
+  for (byte i = 0; i < mfrc522.uid.size; i++)
+  {
+    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    SerialBT.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    Serial.print(mfrc522.uid.uidByte[i], HEX);
+    SerialBT.print(mfrc522.uid.uidByte[i], HEX);
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  Serial.println();
+  Serial.print("Message : ");
+  SerialBT.print("Message");
+  content.toUpperCase();
+  if ((content.substring(1) == "E5 FF A4 AC") || (content.substring(1) == "E5 FF A4 AC")) //change here the UID of the card/cards that you want to give access
+  {
+    Serial.println("Authorized Access");
+    auth = "Authorized Access";
+    SerialBT.print("Authorized Access");
+    Serial.println();
+    relay1 = ~ relay1;
+    digitalWrite(r1, relay1);
+    delay(500);
+  }
+
+  else   {
+    Serial.println("Access Denied");
+    SerialBT.print("Access Denied");
+    auth = "Access Denied" ;
+    delay(3000);
+  }
+
+
   while (1) {
     if (sim_modem.getGPS(&lat2, &lon2, &speed2, &alt2, &vsat2, &usat2, &accuracy2, &year2, &month2, &day2, &hour2, &min2, &sec2)) {
       //Adjust GMT7
@@ -452,7 +508,7 @@ void loop() {
           SerialBT.println("Performing HTTP POST request...");
           // Prepare your HTTP POST request data (Temperature in Celsius degrees)
           String httpRequestData = "api_key=" + apiKeyValue + "&value1=" + String(lat, 8)
-                                   + "&value2=" + String(lon, 8) + "&value3=" + String(random(0, 10)) + "";
+                                   + "&value2=" + String(lon, 8) + "&value3=" + auth + "";
           // Prepare your HTTP POST request data (Temperature in Fahrenheit degrees)
           //String httpRequestData = "api_key=" + apiKeyValue + "&value1=" + String(1.8 * bme.readTemperature() + 32)
           //                       + "&value2=" + String(bme.readHumidity()) + "&value3=" + String(bme.readPressure()/100.0F) + "";
@@ -500,9 +556,7 @@ void loop() {
   SerialBT.println("\nEND OF TEST CYCLE\n\n\n");
   delay(10);
 
-
-
-    // GO TO SLEEP
+  // GO TO SLEEP
   SerialMon.println("ESP Sleep Five Second");
   SerialBT.println("ESP Sleep Five Second");
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
