@@ -63,7 +63,7 @@ SPIClass spi = SPIClass(VSPI);
 MFRC522 mfrc522(SDA_PIN, RST_PIN);   // Create MFRC522 instance.
 
 
-const char apn[] = "M2MAUTOTRONIC";
+const char apn[] = "internet";
 const char server[] = "infakpro.com"; // domain name: example.com, maker.ifttt.com, etc
 const char resource[] = "/post-data.php";         // resource path, for example: /post-data.php
 const int  port = 80;
@@ -337,42 +337,6 @@ void setup() {
 }
 
 void loop() {
-
-  //BAT ADC
-  if (millis() - timeStamp > 1000) {
-    timeStamp = millis();
-    uint16_t v = analogRead(ADC_PIN);
-    float battery_voltage = ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
-    String voltage = "Voltage :" + String(battery_voltage) + "V";
-    batt_cent = ubahmaxmin(battery_voltage * 1000, 2800, 4200, 0, 100);
-
-    // When connecting USB, the battery detection will return 0,
-    // because the adc detection circuit is disconnected when connecting USB
-    /*SerialBT.println(voltage);
-      if (voltage == "Voltage :0.00V") {
-        SerialBT.println("USB is connected, please disconnect USB.");
-      }*/
-  }
-
-  enableGPS();
-  SerialBT.println("Start positioning . Make sure to locate outdoors.");
-  SerialBT.println("The blue indicator light flashes to indicate positioning.");
-  float lat2 = 0;
-  float lon2 = 0;
-  float speed2 = 0;
-  float alt2 = 0;
-  int vsat2 = 0;
-  int usat2 = 0;
-  float accuracy2 = 0;
-  int year2 = 0;
-  int month2 = 0;
-  int day2 = 0;
-  int hour2 = 0;
-  int min2 = 0;
-  int sec2 = 0;
-  int signal2 = ubahmaxmin(sim_modem.getSignalQuality(), 2, 31, 1, 5);
-
-
   // Code for RFID
 
   // Look for new cards
@@ -421,6 +385,39 @@ void loop() {
     delay(3000);
   }
 
+  //BAT ADC
+  if (millis() - timeStamp > 1000) {
+    timeStamp = millis();
+    uint16_t v = analogRead(ADC_PIN);
+    float battery_voltage = ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
+    String voltage = "Voltage :" + String(battery_voltage) + "V";
+    batt_cent = ubahmaxmin(battery_voltage * 1000, 2800, 4200, 0, 100);
+
+    // When connecting USB, the battery detection will return 0,
+    // because the adc detection circuit is disconnected when connecting USB
+    /*SerialBT.println(voltage);
+      if (voltage == "Voltage :0.00V") {
+        SerialBT.println("USB is connected, please disconnect USB.");
+      }*/
+  }
+
+  enableGPS();
+  SerialBT.println("Start positioning . Make sure to locate outdoors.");
+  SerialBT.println("The blue indicator light flashes to indicate positioning.");
+  float lat2 = 0;
+  float lon2 = 0;
+  float speed2 = 0;
+  float alt2 = 0;
+  int vsat2 = 0;
+  int usat2 = 0;
+  float accuracy2 = 0;
+  int year2 = 0;
+  int month2 = 0;
+  int day2 = 0;
+  int hour2 = 0;
+  int min2 = 0;
+  int sec2 = 0;
+  int signal2 = ubahmaxmin(sim_modem.getSignalQuality(), 2, 31, 1, 5);
 
   while (1) {
     if (sim_modem.getGPS(&lat2, &lon2, &speed2, &alt2, &vsat2, &usat2, &accuracy2, &year2, &month2, &day2, &hour2, &min2, &sec2)) {
