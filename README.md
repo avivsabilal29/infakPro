@@ -9,7 +9,7 @@ Video Tutorial 2 : https://youtu.be/bvSBZeOSp8o?si=xZTzfIs0MeSLI5zt
 ![schematicPin](https://github.com/avivsabilal29/infakPro/assets/89498280/4230cda6-8009-4dca-8f8a-21010305154c)
 
 # CONNECTIVITY BETWEEN RFID AND LILYGO VIA VSPI
-![schematicConeectivity](https://github.com/avivsabilal29/infakPro/assets/89498280/5c03ec27-f62a-4936-844c-0a72a232a286)
+![schematicConeectivity](https://github.com/avivsabilal29/infakPro/assets/89498280/257a447d-808b-448c-8184-bcc72767230c)
 
 ![schematicDiagramInfakPro](https://github.com/avivsabilal29/infakPro/assets/89498280/93a7ac9a-c4fe-404a-b300-38ddac24bc0b)
 
