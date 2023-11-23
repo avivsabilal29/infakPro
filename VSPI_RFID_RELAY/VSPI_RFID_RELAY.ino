@@ -31,7 +31,7 @@ int batt_cent;
 #define MODEM_PWRKEY 4
 #define LED_PIN 12
 
-#define SCK  17
+#define SCK  18
 #define MISO  19
 #define MOSI  23
 #define CS  5
