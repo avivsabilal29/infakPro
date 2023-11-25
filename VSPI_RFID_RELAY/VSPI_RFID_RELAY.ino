@@ -413,53 +413,6 @@ void loop() {
       }
       break;
     } else {
-      // Code for RFID
-      // Look for new cards
-      if ( ! mfrc522.PICC_IsNewCardPresent())
-      {
-        return;
-      }
-      // Select one of the cards
-      if ( ! mfrc522.PICC_ReadCardSerial())
-      {
-        return;
-      }
-      //Show UID on serial monitor
-      Serial.print("UID tag :");
-      SerialBT.print("UID Tag : ");
-      String content = "";
-      byte letter;
-      for (byte i = 0; i < mfrc522.uid.size; i++)
-      {
-        Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-        SerialBT.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-        Serial.print(mfrc522.uid.uidByte[i], HEX);
-        SerialBT.print(mfrc522.uid.uidByte[i], HEX);
-        content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
-        content.concat(String(mfrc522.uid.uidByte[i], HEX));
-      }
-      Serial.println();
-      Serial.print("Message : ");
-      SerialBT.print("Message");
-      content.toUpperCase();
-      if ((content.substring(1) == "73 67 24 F6") || (content.substring(1) == "53 D0 2E F6")) //change here the UID of the card/cards that you want to give access
-      {
-        Serial.println("Authorized Access");
-        auth = "Authorized Access";
-        SerialBT.print("Authorized Access");
-        Serial.println();
-        relay1 = ~ relay1;
-        digitalWrite(RELAY, relay1);
-        delay(500);
-      }
-
-      else   {
-        Serial.println("Access Denied");
-        SerialBT.print("Access Denied");
-        auth = "Access Denied" ;
-        delay(3000);
-      }
-
       digitalWrite(LED_PIN, !digitalRead(LED_PIN));
       //
       int signal1 = ubahmaxmin(sim_modem.getSignalQuality(), 2, 31, 1, 5);
@@ -511,13 +464,6 @@ void loop() {
           // Prepare your HTTP POST request data (Temperature in Celsius degrees)
           String httpRequestData = "api_key=" + apiKeyValue + "&value1=" + String(lat, 8)
                                    + "&value2=" + String(lon, 8) + "&value3=" + auth + "";
-          // Prepare your HTTP POST request data (Temperature in Fahrenheit degrees)
-          //String httpRequestData = "api_key=" + apiKeyValue + "&value1=" + String(1.8 * bme.readTemperature() + 32)
-          //                       + "&value2=" + String(bme.readHumidity()) + "&value3=" + String(bme.readPressure()/100.0F) + "";
-
-          // You can comment the httpRequestData variable above
-          // then, use the httpRequestData variable below (for testing purposes without the BME280 sensor)
-          //String httpRequestData = "api_key=tPmAT5Ab3j7F9&value1=24.75&value2=49.54&value3=1005.14";
 
           client.print(String("POST ") + resource + " HTTP/1.1\r\n");
           client.print(String("Host: ") + server + "\r\n");
@@ -557,6 +503,54 @@ void loop() {
   SerialMon.println("\nEND OF TEST CYCLE\n\n\n");
   SerialBT.println("\nEND OF TEST CYCLE\n\n\n");
   delay(10);
+
+  // Code for RFID
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent())
+  {
+    return;
+  }
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+  //Show UID on serial monitor
+  Serial.print("UID tag :");
+  SerialBT.print("UID Tag : ");
+  String content = "";
+  byte letter;
+  for (byte i = 0; i < mfrc522.uid.size; i++)
+  {
+    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    SerialBT.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    Serial.print(mfrc522.uid.uidByte[i], HEX);
+    SerialBT.print(mfrc522.uid.uidByte[i], HEX);
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  Serial.println();
+  Serial.print("Message : ");
+  SerialBT.print("Message");
+  content.toUpperCase();
+  if ((content.substring(1) == "73 67 24 F6") || (content.substring(1) == "53 D0 2E F6")) //change here the UID of the card/cards that you want to give access
+  {
+    Serial.println("Authorized Access");
+    auth = "Authorized Access";
+    SerialBT.print("Authorized Access");
+    Serial.println();
+    relay1 = ~ relay1;
+    digitalWrite(RELAY, relay1);
+    delay(500);
+  }
+
+  else   {
+    Serial.println("Access Denied");
+    SerialBT.print("Access Denied");
+    auth = "Access Denied" ;
+    delay(3000);
+  }
+
 
   // GO TO SLEEP
   SerialMon.println("ESP Sleep Five Second");
