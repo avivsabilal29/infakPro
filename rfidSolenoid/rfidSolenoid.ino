@@ -12,7 +12,7 @@ void setup()
 {
   pinMode(r1, OUTPUT);
 
-  Serial.begin(9600);   // Initiate a serial communication
+  Serial.begin(115200);   // Initiate a serial communication
   SPI.begin();      // Initiate  SPI bus
   mfrc522.PCD_Init();   // Initiate MFRC522
   Serial.println("Approximate your card to the reader...");
@@ -45,7 +45,7 @@ void loop()
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
-  if ((content.substring(1) == "E5 FF A4 AC") || (content.substring(1) == "E5 FF A4 AC")) //change here the UID of the card/cards that you want to give access
+  if ((content.substring(1) == "73 67 24 F6") || (content.substring(1) == "E5 FF A4 AC")) //change here the UID of the card/cards that you want to give access
   {
     Serial.println("Authorized access");
     Serial.println();

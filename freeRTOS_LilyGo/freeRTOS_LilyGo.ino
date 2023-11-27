@@ -164,10 +164,6 @@ void setup() {
   digitalWrite(LED_PIN, HIGH);
   pinMode(RELAY, OUTPUT);
   SerialMon.begin(115200);
-  SPI.begin();      // Initiate  SPI bus
-  mfrc522.PCD_Init();   // Initiate MFRC522
-  Serial.println("Approximate your card to the reader...");
-  SerialBT.print("Approximate your card to the reader...");
   // Set SIM module baud rate and UART pins
   SerialAT.begin(MODEM_UART_BAUD, SERIAL_8N1, MODEM_RX, MODEM_TX);
   // Start BT Serial SSP
@@ -192,7 +188,7 @@ void setup() {
   }
 
   xTaskCreatePinnedToCore(Task1code, "Task1", 20480, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(Task2code, "Task2", 20480, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(Task2code, "Task2", 20480, NULL, 2, NULL, 1);
 }
 
 
@@ -204,6 +200,10 @@ void Task1code( void * pvParameters  ) {
   Serial.println(xPortGetCoreID());
   SerialBT.print("Task1 is running on core ");
   SerialBT.println(xPortGetCoreID());
+  SPI.begin();      // Initiate  SPI bus
+  mfrc522.PCD_Init();   // Initiate MFRC522
+  Serial.println("Approximate your card to the reader...");
+  SerialBT.print("Approximate your card to the reader...");
 
   for (;;) {
     //  // Code for RFID

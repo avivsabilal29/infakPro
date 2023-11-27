@@ -30,14 +30,6 @@ int batt_cent;
 #define MODEM_RX 26
 #define MODEM_PWRKEY 4
 #define LED_PIN 12
-
-//#define SCK  18
-//#define MISO  19
-//#define MOSI  23
-//#define CS  5
-#define SDA_PIN 21
-#define RST_PIN 15
-#define RELAY 14
 //
 #define ADC_PIN 35
 int vref = 1100;
@@ -56,19 +48,14 @@ uint32_t timeStamp = 0;
 
 // Include after TinyGSM definitions
 #include <TinyGsmClient.h>
-#include <SPI.h>
-#include <MFRC522.h>
-int relay1 = LOW;
-//SPIClass spi = SPIClass(VSPI);
-MFRC522 mfrc522(SDA_PIN, RST_PIN);   // Create MFRC522 instance.
 
 
-const char apn[] = "internet";
+const char apn[] = "M2MAUTOTRONIC";
 const char server[] = "infakpro.com"; // domain name: example.com, maker.ifttt.com, etc
 const char resource[] = "/post-data.php";         // resource path, for example: /post-data.php
 const int  port = 80;
 String apiKeyValue = "InfakProFaisal23";
-String auth = "";
+String auth = "Unauthorized";
 
 // Layers stack
 TinyGsm sim_modem(SerialAT);
@@ -161,14 +148,8 @@ void modemRestart() {
 void setup() {
   // Set LED OFF
   pinMode(LED_PIN, OUTPUT);
-  pinMode(RELAY, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
   SerialMon.begin(115200);
-  SPI.begin();      // Initiate  SPI bus
-  mfrc522.PCD_Init();   // Initiate MFRC522
-  Serial.println("Approximate your card to the reader...");
-  SerialBT.print("Approximate your card to the reader...");
-  Serial.println();
   delay(100);
 
   // Set SIM module baud rate and UART pins
@@ -338,6 +319,9 @@ void setup() {
 
 void loop() {
   //BAT ADC
+  Serial.println(Serial2.readString());
+  SerialBT.println(Serial2.readString());
+  auth = Serial2.readString();
   if (millis() - timeStamp > 1000) {
     timeStamp = millis();
     uint16_t v = analogRead(ADC_PIN);
@@ -407,11 +391,59 @@ void loop() {
       SerialBT.println("\n\n");
       SerialBT.println("\n\nDONE! Reset GPS Antenna");
 
-      for (int i = 20; i > 0; i--) {
-        SerialBT.print(String(i) + "...");
-        delay(1000);
+//      for (int i = 20; i > 0; i--) {
+//        SerialBT.print(String(i) + "...");
+//        delay(1000);
+//      }
+      if (sim_modem.isGprsConnected()) {
+        SerialMon.println(" OK");
+        SerialBT.println("OK");
+        if (!client.connect(server, port)) {
+          SerialBT.println("Fail");
+          SerialMon.println(" Fail");
+        } else {
+          SerialBT.println("OK");
+          SerialMon.println(" OK");
+
+          // Making an HTTP POST request
+          SerialMon.println("Performing HTTP POST request...");
+          SerialBT.println("Performing HTTP POST request...");
+          // Prepare your HTTP POST request data (Temperature in Celsius degrees)
+          String httpRequestData = "api_key=" + apiKeyValue + "&value1=" + String(lat2, 8)
+                                   + "&value2=" + String(lon2, 8) + "&value3=" + auth + "";
+
+          client.print(String("POST ") + resource + " HTTP/1.1\r\n");
+          client.print(String("Host: ") + server + "\r\n");
+          client.println("Connection: close");
+          client.println("Content-Type: application/x-www-form-urlencoded");
+          client.print("Content-Length: ");
+          client.println(httpRequestData.length());
+          client.println();
+          client.println(httpRequestData);
+
+          unsigned long timeout = millis();
+          while (client.connected() && millis() - timeout < 10000L) {
+            // Print available data (HTTP response from server)
+            while (client.available()) {
+              char c = client.read();
+              SerialMon.print(c);
+              SerialBT.print("Client Print");
+              SerialBT.println(c);
+              timeout = millis();
+            }
+          }
+          SerialMon.println();
+
+          // Close client and disconnect
+          client.stop();
+          SerialMon.println(F("Server disconnected"));
+          SerialBT.print("Server disconnected");
+          sim_modem.gprsDisconnect();
+          SerialMon.println(F("GPRS disconnected"));
+          SerialBT.print("GPRS disconnected");
+          break;
+        }
       }
-      break;
     } else {
       digitalWrite(LED_PIN, !digitalRead(LED_PIN));
       //
@@ -446,56 +478,6 @@ void loop() {
       SerialBT.println("errorMessage: " + String(""));
       SerialBT.println("recordedAt: " + String(year) + "-" + String(month) + "-" + String(day) + "T" + String(hour) + ":" + String(min) + ":" + String(sec) + "." + "000Z");
       SerialBT.println("\n\n");
-
-
-      if (sim_modem.isGprsConnected()) {
-        SerialMon.println(" OK");
-        SerialBT.println("OK");
-        if (!client.connect(server, port)) {
-          SerialBT.println("Fail");
-          SerialMon.println(" Fail");
-        } else {
-          SerialBT.println("OK");
-          SerialMon.println(" OK");
-
-          // Making an HTTP POST request
-          SerialMon.println("Performing HTTP POST request...");
-          SerialBT.println("Performing HTTP POST request...");
-          // Prepare your HTTP POST request data (Temperature in Celsius degrees)
-          String httpRequestData = "api_key=" + apiKeyValue + "&value1=" + String(lat, 8)
-                                   + "&value2=" + String(lon, 8) + "&value3=" + auth + "";
-
-          client.print(String("POST ") + resource + " HTTP/1.1\r\n");
-          client.print(String("Host: ") + server + "\r\n");
-          client.println("Connection: close");
-          client.println("Content-Type: application/x-www-form-urlencoded");
-          client.print("Content-Length: ");
-          client.println(httpRequestData.length());
-          client.println();
-          client.println(httpRequestData);
-
-          unsigned long timeout = millis();
-          while (client.connected() && millis() - timeout < 10000L) {
-            // Print available data (HTTP response from server)
-            while (client.available()) {
-              char c = client.read();
-              SerialMon.print(c);
-              SerialBT.print("Client Print");
-              SerialBT.println(c);
-              timeout = millis();
-            }
-          }
-          SerialMon.println();
-
-          // Close client and disconnect
-          client.stop();
-          SerialMon.println(F("Server disconnected"));
-          SerialBT.print("Server disconnected");
-          sim_modem.gprsDisconnect();
-          SerialMon.println(F("GPRS disconnected"));
-          SerialBT.print("GPRS disconnected");
-        }
-      }
     }
     delay(1000);
   }
@@ -503,54 +485,6 @@ void loop() {
   SerialMon.println("\nEND OF TEST CYCLE\n\n\n");
   SerialBT.println("\nEND OF TEST CYCLE\n\n\n");
   delay(10);
-
-  // Code for RFID
-  // Look for new cards
-  if ( ! mfrc522.PICC_IsNewCardPresent())
-  {
-    return;
-  }
-  // Select one of the cards
-  if ( ! mfrc522.PICC_ReadCardSerial())
-  {
-    return;
-  }
-  //Show UID on serial monitor
-  Serial.print("UID tag :");
-  SerialBT.print("UID Tag : ");
-  String content = "";
-  byte letter;
-  for (byte i = 0; i < mfrc522.uid.size; i++)
-  {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    SerialBT.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(mfrc522.uid.uidByte[i], HEX);
-    SerialBT.print(mfrc522.uid.uidByte[i], HEX);
-    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
-    content.concat(String(mfrc522.uid.uidByte[i], HEX));
-  }
-  Serial.println();
-  Serial.print("Message : ");
-  SerialBT.print("Message");
-  content.toUpperCase();
-  if ((content.substring(1) == "73 67 24 F6") || (content.substring(1) == "53 D0 2E F6")) //change here the UID of the card/cards that you want to give access
-  {
-    Serial.println("Authorized Access");
-    auth = "Authorized Access";
-    SerialBT.print("Authorized Access");
-    Serial.println();
-    relay1 = ~ relay1;
-    digitalWrite(RELAY, relay1);
-    delay(500);
-  }
-
-  else   {
-    Serial.println("Access Denied");
-    SerialBT.print("Access Denied");
-    auth = "Access Denied" ;
-    delay(3000);
-  }
-
 
   // GO TO SLEEP
   SerialMon.println("ESP Sleep Five Second");
